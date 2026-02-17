@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import AuthLeftPanel from '../components/AuthLeftPanel';
+import { AuthContext } from '../context/AuthContext';
 
 const departments = [
   'Computer Engineering',
@@ -15,6 +17,8 @@ const departments = [
 const semesters = Array.from({ length: 8 }, (_, i) => i + 1);
 
 export default function Register() {
+  const { setUser, setToken } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -25,21 +29,34 @@ export default function Register() {
     semester: '',
   });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const redirectToRole = (role) => {
+    switch (role) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'teacher':
+        return '/teacher/dashboard';
+      case 'hod':
+        return '/hod/dashboard';
+      default:
+        return '/student/dashboard';
+    }
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setLoading(true);
     try {
-      await api.post('/auth/register', form);
-      setSuccess('Registration successful! You can now log in.');
+      const res = await api.post('/auth/register', form);
+      setToken(res.data.accessToken);
+      setUser(res.data.user);
+      navigate(redirectToRole(res.data.user.role), { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -55,7 +72,6 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="w-full max-w-sm glassmorphism p-8 rounded-2xl shadow-soft">
             <h2 className="text-3xl font-extrabold mb-6 text-center text-primary">Create your account</h2>
             {error && <div className="text-danger mb-4 text-center animate-shake">{error}</div>}
-            {success && <div className="text-accent mb-4 text-center animate-fade-in">{success}</div>}
             <div className="mb-3">
               <label className="block text-gray-700 font-semibold mb-1">Name</label>
               <input
@@ -104,24 +120,46 @@ export default function Register() {
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
                 <option value="admin">Admin</option>
+                <option value="hod">HOD</option>
               </select>
             </div>
-            {form.role === 'student' && (
+            {(form.role === 'student' || form.role === 'hod') && (
               <>
+                {form.role === 'student' && (
+                  <>
+                    <div className="mb-3">
+                      <label className="block text-gray-700 font-semibold mb-1">Roll No</label>
+                      <input
+                        type="text"
+                        name="rollNo"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
+                        value={form.rollNo}
+                        onChange={handleChange}
+                        required
+                        placeholder="e.g. CE-23-101"
+                      />
+                    </div>
+                    <div className="mb-6">
+                      <label className="block text-gray-700 font-semibold mb-1">Semester</label>
+                      <select
+                        name="semester"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
+                        value={form.semester}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Select semester</option>
+                        {semesters.map(sem => (
+                          <option key={sem} value={sem}>{sem}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
                 <div className="mb-3">
-                  <label className="block text-gray-700 font-semibold mb-1">Roll No</label>
-                  <input
-                    type="text"
-                    name="rollNo"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
-                    value={form.rollNo}
-                    onChange={handleChange}
-                    required
-                    placeholder="e.g. CE-23-101"
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="block text-gray-700 font-semibold mb-1">Department</label>
+                  <label className="block text-gray-700 font-semibold mb-1">
+                    {form.role === 'hod' ? 'Department (required for HOD)' : 'Department'}
+                  </label>
                   <select
                     name="department"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
@@ -132,21 +170,6 @@ export default function Register() {
                     <option value="">Select department</option>
                     {departments.map(dep => (
                       <option key={dep} value={dep}>{dep}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mb-6">
-                  <label className="block text-gray-700 font-semibold mb-1">Semester</label>
-                  <select
-                    name="semester"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
-                    value={form.semester}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select semester</option>
-                    {semesters.map(sem => (
-                      <option key={sem} value={sem}>{sem}</option>
                     ))}
                   </select>
                 </div>
@@ -161,7 +184,9 @@ export default function Register() {
             </button>
             <div className="mt-6 text-center text-gray-500">
               Already have an account?{' '}
-              <a href="/login" className="text-primary font-semibold hover:underline">Sign in</a>
+              <Link to="/login" className="text-primary font-semibold hover:underline">
+                Sign in
+              </Link>
             </div>
           </form>
         </div>

@@ -1,21 +1,31 @@
-import React, { useState } from 'react';
-import api from '../services/api';
+import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AuthLeftPanel from '../components/AuthLeftPanel';
+import { AuthContext } from '../context/AuthContext';
 
-export default function Login({ onLogin }) {
+export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await api.post('/auth/login', { email, password });
-      onLogin(res.data);
+      const user = await login({ email, password });
+      if (!user.profileCompleted) {
+        navigate('/complete-profile');
+        return;
+      }
+      if (user.role === 'admin') navigate('/admin/dashboard');
+      else if (user.role === 'teacher') navigate('/teacher/dashboard');
+      else if (user.role === 'hod') navigate('/hod/dashboard');
+      else navigate('/student/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {
@@ -38,7 +48,7 @@ export default function Login({ onLogin }) {
                 name="email"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
                 autoComplete="email"
@@ -51,7 +61,7 @@ export default function Login({ onLogin }) {
                 name="password"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
               />
@@ -62,7 +72,7 @@ export default function Login({ onLogin }) {
                   type="checkbox"
                   className="accent-primary rounded"
                   checked={remember}
-                  onChange={e => setRemember(e.target.checked)}
+                  onChange={(e) => setRemember(e.target.checked)}
                 />
                 Remember me
               </label>
@@ -70,14 +80,22 @@ export default function Login({ onLogin }) {
             </div>
             <button
               type="submit"
-              className={`w-full py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary/90 transition-all duration-200 shadow-soft ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`w-full py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary/90 transition-all duration-200 shadow-soft ${
+                loading ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
               disabled={loading}
             >
-              {loading ? <span className="animate-spin material-icons align-middle">autorenew</span> : 'Sign In'}
+              {loading ? (
+                <span className="animate-spin material-icons align-middle">autorenew</span>
+              ) : (
+                'Sign In'
+              )}
             </button>
             <div className="mt-6 text-center text-gray-500">
               Don&apos;t have an account?{' '}
-              <a href="/register" className="text-primary font-semibold hover:underline">Sign up</a>
+              <a href="/register" className="text-primary font-semibold hover:underline">
+                Sign up
+              </a>
             </div>
           </form>
         </div>

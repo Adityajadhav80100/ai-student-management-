@@ -6,5 +6,7 @@ const { registerBody, loginBody } = require('../validators/authSchemas');
 
 router.post('/register', validate({ body: registerBody }), authController.register);
 router.post('/login', validate({ body: loginBody }), authController.login);
+router.post('/refresh', authController.refreshToken);
+router.post('/logout', authController.logout);
 
 module.exports = router;

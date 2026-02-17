@@ -5,6 +5,7 @@ const departmentSchema = new mongoose.Schema(
     name: { type: String, required: true, unique: true },
     code: { type: String, required: true, unique: true },
     description: { type: String },
+    hod: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );

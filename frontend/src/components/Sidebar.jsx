@@ -1,16 +1,34 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const navItems = [
-  { label: 'Dashboard', to: '/dashboard', icon: 'dashboard', roles: ['admin', 'teacher', 'student'] },
-  { label: 'Manage Students', to: '/students', icon: 'group', roles: ['admin'] },
-  { label: 'Analytics', to: '/analytics', icon: 'bar_chart', roles: ['admin', 'teacher'] },
-  { label: 'Attendance', to: '/attendance', icon: 'event_available', roles: ['teacher'] },
-  { label: 'Marks', to: '/marks', icon: 'grading', roles: ['teacher'] },
-  { label: 'My Analytics', to: '/my-analytics', icon: 'insights', roles: ['student'] },
-];
+export const navConfig = {
+  admin: [
+    { label: 'Dashboard', to: '/admin/dashboard', icon: 'dashboard' },
+    { label: 'Analytics', to: '/admin/analytics', icon: 'bar_chart' },
+    { label: 'Students', to: '/admin/students', icon: 'group' },
+    { label: 'Departments', to: '/admin/departments', icon: 'apartment' },
+    { label: 'Subjects', to: '/admin/subjects', icon: 'menu_book' },
+  ],
+  teacher: [
+    { label: 'Dashboard', to: '/teacher/dashboard', icon: 'dashboard' },
+    { label: 'My Subjects', to: '/teacher/subjects', icon: 'menu_book' },
+    { label: 'Take Attendance', to: '/teacher/attendance', icon: 'event_available' },
+    { label: 'Enter Marks', to: '/teacher/marks', icon: 'grading' },
+    { label: 'Student Analytics', to: '/teacher/analytics', icon: 'insights' },
+  ],
+  student: [
+    { label: 'Dashboard', to: '/student/dashboard', icon: 'dashboard' },
+    { label: 'Attendance', to: '/student/attendance', icon: 'event_available' },
+    { label: 'Marks', to: '/student/marks', icon: 'grading' },
+    { label: 'Analytics', to: '/student/analytics', icon: 'insights' },
+    { label: 'My Profile', to: '/student/profile', icon: 'person' },
+  ],
+  hod: [
+    { label: 'Dashboard', to: '/hod/dashboard', icon: 'dashboard' },
+  ],
+};
 
-export default function Sidebar({ role, onLogout }) {
+export default function Sidebar({ navItems = [], onLogout }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const isActive = (to) => location.pathname === to || location.pathname.startsWith(`${to}/`);
@@ -31,7 +49,7 @@ export default function Sidebar({ role, onLogout }) {
       </div>
       <nav className="flex-1">
         <ul className="space-y-2 mt-4 px-2">
-          {navItems.filter(item => item.roles.includes(role)).map(item => (
+          {navItems.map((item) => (
             <li key={item.to}>
               <Link
                 to={item.to}

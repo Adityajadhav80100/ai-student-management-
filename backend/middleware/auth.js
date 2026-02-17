@@ -1,23 +1,30 @@
 const jwt = require('jsonwebtoken');
-const { secret } = require('../config/jwt');
+const { accessSecret } = require('../config/jwt');
 
-// Basic auth middleware: verifies token and attaches { userId, role } to req.user
+const extractToken = (req) => {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    return header.split(' ')[1];
+  }
+  if (req.cookies?.accessToken) {
+    return req.cookies.accessToken;
+  }
+  return null;
+};
+
 module.exports = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = extractToken(req);
+  if (!token) {
     return res.status(401).json({ message: 'No token provided' });
   }
-  const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, accessSecret);
     req.user = {
-      userId: decoded.id,
+      userId: decoded.userId,
       role: decoded.role,
-      name: decoded.name,
-      email: decoded.email,
     };
     next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Invalid token' });
+  } catch {
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };

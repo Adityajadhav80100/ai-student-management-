@@ -4,19 +4,11 @@ const studentController = require('../controllers/studentController');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 
-// Must be before /:id so "me" is not parsed as ObjectId
 router.get('/me', auth, requireRole('student'), studentController.getMe);
+router.get('/attendance', auth, requireRole('student'), studentController.getAttendance);
+router.get('/marks', auth, requireRole('student'), studentController.getMarks);
 
-// Admin/Teacher: CRUD
-router.get('/', auth, requireRole('admin', 'teacher'), studentController.getAll);
-router.post('/', auth, requireRole('admin', 'teacher'), studentController.create);
-router.get(
-  '/:id',
-  auth,
-  requireRole('admin', 'teacher', 'student'),
-  studentController.getById
-);
-router.put('/:id', auth, requireRole('admin', 'teacher'), studentController.update);
-router.delete('/:id', auth, requireRole('admin'), studentController.remove);
+router.get('/', auth, requireRole('admin', 'teacher', 'hod'), studentController.listAll);
+router.get('/:id', auth, requireRole('admin', 'teacher', 'hod'), studentController.getById);
 
 module.exports = router;

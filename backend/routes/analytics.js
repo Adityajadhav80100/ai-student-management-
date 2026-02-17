@@ -4,30 +4,20 @@ const analyticsController = require('../controllers/analyticsController');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 
-// Analytics endpoints (AI)
-router.post(
-  '/predict',
+router.get('/admin/overview', auth, requireRole('admin'), analyticsController.getAdminOverview);
+router.get('/student/me', auth, requireRole('student'), analyticsController.getMyAnalytics);
+router.get(
+  '/student/:id',
   auth,
-  requireRole('admin', 'teacher', 'student'),
-  analyticsController.predictPerformance
+  requireRole('admin', 'teacher', 'student', 'hod'),
+  analyticsController.getStudentAnalytics
 );
-router.post(
-  '/dropout',
+
+router.get(
+  '/hod/department',
   auth,
-  requireRole('admin', 'teacher', 'student'),
-  analyticsController.detectDropoutRisk
-);
-router.post(
-  '/attendance-trend',
-  auth,
-  requireRole('admin', 'teacher', 'student'),
-  analyticsController.analyzeAttendanceTrend
-);
-router.post(
-  '/recommend',
-  auth,
-  requireRole('admin', 'teacher', 'student'),
-  analyticsController.generateRecommendations
+  requireRole('hod'),
+  analyticsController.getHodDepartmentAnalytics
 );
 
 module.exports = router;
