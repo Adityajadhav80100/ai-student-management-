@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 export default function RequireAuth({ children }) {
-  const { user, ready } = useContext(AuthContext);
+  const { user, token, ready } = useContext(AuthContext);
   const location = useLocation();
 
   if (!ready) {
@@ -14,7 +14,7 @@ export default function RequireAuth({ children }) {
     );
   }
 
-  if (!user) {
+  if (!user || !token) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

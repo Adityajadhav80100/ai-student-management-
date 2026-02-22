@@ -15,16 +15,24 @@ export function setAccessToken(token) {
   }
 }
 
-function clearAuthAndRedirect() {
+function isPublicPath() {
+  const publicPaths = ['/login', '/register'];
+  return publicPaths.includes(window.location.pathname);
+}
+
+function clearAuth() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   setAccessToken(null);
-  if (window.location.pathname !== '/login') {
+}
+
+function handleUnauthorized() {
+  clearAuth();
+  if (!isPublicPath()) {
     window.location.href = '/login';
   }
 }
 
-// Auto attach token from storage on every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token && !config.headers.Authorization) {
@@ -37,7 +45,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      clearAuthAndRedirect();
+      handleUnauthorized();
     }
     return Promise.reject(error);
   }

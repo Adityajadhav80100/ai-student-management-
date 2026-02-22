@@ -40,18 +40,7 @@ async function ensureTeacherOwnsSubject(teacher, subjectId) {
 exports.getSubjects = async (req, res, next) => {
   try {
     const teacher = await loadTeacher(req.user.userId);
-    const filters = {
-      assignedTeacher: teacher._id,
-    };
-    if (teacher.subjectsHandled?.length) {
-      filters._id = {
-        $in: teacher.subjectsHandled
-          .map((entry) => entry?._id)
-          .filter((id) => id)
-          .map((id) => id.toString()),
-      };
-    }
-    const subjects = await Subject.find(filters).populate('department', 'name code');
+    const subjects = await Subject.find({ assignedTeacher: teacher._id }).populate('department', 'name code');
     res.json(subjects);
   } catch (err) {
     next(err);

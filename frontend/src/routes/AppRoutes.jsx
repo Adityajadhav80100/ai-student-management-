@@ -43,25 +43,13 @@ export default function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      <Route
-        element={
-          <RequireAuth>
-            <Outlet />
-          </RequireAuth>
-        }
-      >
+      <Route element={<RequireAuth><Outlet /></RequireAuth>}>
         <Route path="/complete-profile" element={<CompleteProfile />} />
 
-        <Route
-          element={
-            <RequireProfileCompleted>
-              <Outlet />
-            </RequireProfileCompleted>
-          }
-        >
+        <Route element={<RequireProfileCompleted><Outlet /></RequireProfileCompleted>}>
           <Route path="/" element={<RoleRedirect />} />
 
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin/*" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="analytics" element={<AnalyticsDashboard />} />
@@ -71,7 +59,7 @@ export default function AppRoutes() {
             <Route path="*" element={<NotFound />} />
           </Route>
 
-          <Route path="/teacher" element={<TeacherLayout />}>
+          <Route path="/teacher/*" element={<TeacherLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<TeacherDashboard />} />
             <Route path="subjects" element={<TeacherSubjects />} />
@@ -81,13 +69,13 @@ export default function AppRoutes() {
             <Route path="*" element={<NotFound />} />
           </Route>
 
-          <Route path="/hod" element={<HodLayout />}>
+          <Route path="/hod/*" element={<HodLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<HodDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 
-          <Route path="/student" element={<StudentLayout />}>
+          <Route path="/student/*" element={<StudentLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<StudentDashboard />} />
             <Route path="attendance" element={<StudentAttendance />} />

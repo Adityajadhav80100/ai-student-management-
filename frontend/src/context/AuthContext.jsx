@@ -38,6 +38,13 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   useEffect(() => {
+    const publicPaths = ['/login', '/register'];
+    const currentPath = window.location.pathname;
+    if (publicPaths.includes(currentPath)) {
+      setReady(true);
+      return;
+    }
+
     async function restoreSession() {
       setRefreshing(true);
       try {
@@ -45,8 +52,10 @@ export function AuthProvider({ children }) {
         setUser(data.user);
         setToken(data.accessToken);
       } catch (err) {
-        setUser(null);
-        setToken(null);
+        if (token) {
+          setUser(null);
+          setToken(null);
+        }
       } finally {
         setRefreshing(false);
         setReady(true);
