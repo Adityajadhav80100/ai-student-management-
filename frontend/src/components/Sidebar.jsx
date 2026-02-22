@@ -8,6 +8,7 @@ export const navConfig = {
     { label: 'Students', to: '/admin/students', icon: 'group' },
     { label: 'Departments', to: '/admin/departments', icon: 'apartment' },
     { label: 'Subjects', to: '/admin/subjects', icon: 'menu_book' },
+    { label: 'Teachers', to: '/admin/teachers', icon: 'groups' },
   ],
   teacher: [
     { label: 'Dashboard', to: '/teacher/dashboard', icon: 'dashboard' },

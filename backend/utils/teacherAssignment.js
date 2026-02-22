@@ -3,12 +3,12 @@ const TeacherProfile = require('../models/TeacherProfile');
 async function syncTeacherAssignment(subjectId, newTeacherId, prevTeacherId) {
   if (prevTeacherId && prevTeacherId !== newTeacherId) {
     await TeacherProfile.findByIdAndUpdate(prevTeacherId, {
-      $pull: { subjectsHandled: subjectId },
+      $pull: { subjectsHandled: subjectId, assignedSubjects: subjectId },
     });
   }
   if (!newTeacherId) return;
   await TeacherProfile.findByIdAndUpdate(newTeacherId, {
-    $addToSet: { subjectsHandled: subjectId },
+    $addToSet: { subjectsHandled: subjectId, assignedSubjects: subjectId },
   });
 }
 

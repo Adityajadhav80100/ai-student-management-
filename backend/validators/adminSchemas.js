@@ -35,6 +35,12 @@ const subjectQuery = Joi.object({
   semester: Joi.number().integer().min(1).max(12).optional(),
 });
 
+const adminStudentQuery = Joi.object({
+  departmentId: objectId.optional(),
+  semester: Joi.number().integer().min(1).max(12).optional(),
+  academicYear: Joi.string().trim().allow('', null).optional(),
+});
+
 const assignTeacherBody = Joi.object({
   teacherProfileId: objectId.required(),
 });
@@ -44,26 +50,33 @@ const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
 const teacherBody = Joi.object({
   fullName: Joi.string().trim().min(2).max(120).required(),
   email: Joi.string().trim().email().required(),
-  employeeId: Joi.string().trim().min(2).max(60).required(),
+  password: Joi.string().trim().min(8).required(),
   departmentId: objectId.required(),
-  subjectsAssigned: Joi.array().items(objectId).default([]),
   phone: Joi.string().trim().allow('', null),
-  role: Joi.string().valid('teacher', 'hod').default('teacher'),
 });
 
 const teacherUpdateBody = Joi.object({
   fullName: Joi.string().trim().min(2).max(120),
-  email: Joi.string().trim().email(),
-  employeeId: Joi.string().trim().min(2).max(60),
   departmentId: objectId,
-  subjectsAssigned: Joi.array().items(objectId),
   phone: Joi.string().trim().allow('', null),
-  role: Joi.string().valid('teacher', 'hod'),
+  active: Joi.boolean(),
 }).min(1);
 
 const teacherQuery = Joi.object({
   departmentId: objectId.optional(),
   search: Joi.string().trim().allow('', null),
+});
+
+const teacherIdParam = Joi.object({
+  id: objectId.required(),
+});
+
+const teacherIdRoute = Joi.object({
+  teacherId: objectId.required(),
+});
+
+const assignSubjectsBody = Joi.object({
+  subjectIds: Joi.array().items(objectId).unique().required(),
 });
 
 const timetableBody = Joi.object({
@@ -106,7 +119,11 @@ module.exports = {
   teacherBody,
   teacherUpdateBody,
   teacherQuery,
+  teacherIdParam,
   timetableBody,
   timetableQuery,
   assignHodBody,
+  adminStudentQuery,
+  teacherIdRoute,
+  assignSubjectsBody,
 };

@@ -6,7 +6,11 @@ const subjectSchema = new mongoose.Schema(
     code: { type: String, required: true, unique: true },
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
     semester: { type: Number, required: true },
-    assignedTeacher: { type: mongoose.Schema.Types.ObjectId, ref: 'TeacherProfile' },
+    assignedTeacher: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TeacherProfile',
+      default: null,
+    },
   },
   { timestamps: true }
 );

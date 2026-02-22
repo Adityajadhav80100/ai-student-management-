@@ -14,9 +14,13 @@ const {
   teacherBody,
   teacherUpdateBody,
   teacherQuery,
+  teacherIdParam,
+  teacherIdRoute,
   timetableBody,
   timetableQuery,
   assignHodBody,
+  adminStudentQuery,
+  assignSubjectsBody,
 } = require('../validators/adminSchemas');
 
 router.use(auth, requireRole('admin'));
@@ -41,12 +45,22 @@ router.put(
 
 router.post('/teachers', validate({ body: teacherBody }), adminController.createTeacher);
 router.get('/teachers', validate({ query: teacherQuery }), adminController.listTeachers);
-router.get('/teachers/:id', adminController.getTeacher);
-router.put('/teachers/:id', validate({ body: teacherUpdateBody }), adminController.updateTeacher);
-router.delete('/teachers/:id', adminController.deleteTeacher);
+router.get('/teachers/:id', validate({ params: teacherIdParam }), adminController.getTeacher);
+router.patch(
+  '/teachers/:id',
+  validate({ params: teacherIdParam, body: teacherUpdateBody }),
+  adminController.updateTeacher
+);
+router.delete('/teachers/:id', validate({ params: teacherIdParam }), adminController.deleteTeacher);
+router.patch(
+  '/teachers/:teacherId/subjects',
+  validate({ params: teacherIdRoute, body: assignSubjectsBody }),
+  adminController.assignSubjectsToTeacher
+);
 
 router.post('/timetables', validate({ body: timetableBody }), adminController.createTimetableEntry);
 router.get('/timetables', validate({ query: timetableQuery }), adminController.listTimetableEntries);
+router.get('/students', validate({ query: adminStudentQuery }), adminController.listStudents);
 router.delete('/timetables/:id', adminController.deleteTimetableEntry);
 
 router.put('/departments/:id/hod', validate({ body: assignHodBody }), adminController.assignHod);

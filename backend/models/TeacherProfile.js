@@ -7,7 +7,12 @@ const teacherProfileSchema = new mongoose.Schema(
     employeeId: { type: String, required: true, unique: true },
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
     subjectsHandled: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }],
+    assignedSubjects: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }],
+      default: [],
+    },
     phone: { type: String },
+    active: { type: Boolean, default: true },
     photoUrl: { type: String },
   },
   { timestamps: true }

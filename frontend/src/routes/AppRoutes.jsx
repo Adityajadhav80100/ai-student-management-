@@ -13,7 +13,7 @@ import StudentLayout from '../layouts/StudentLayout';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminDepartments from '../pages/admin/AdminDepartments';
 import AdminSubjects from '../pages/admin/AdminSubjects';
-import StudentsPage from '../pages/Students';
+import AdminStudents from '../pages/admin/AdminStudents';
 import AnalyticsDashboard from '../pages/AnalyticsDashboard';
 import TeacherDashboard from '../pages/teacher/TeacherDashboard';
 import TeacherSubjects from '../pages/teacher/TeacherSubjects';
@@ -27,6 +27,7 @@ import MyAnalytics from '../pages/MyAnalytics';
 import MyProfile from '../pages/student/MyProfile';
 import HodDashboard from '../pages/hod/HodDashboard';
 import HodLayout from '../layouts/HodLayout';
+import AdminTeachers from '../pages/admin/AdminTeachers';
 
 function RoleRedirect() {
   const { user } = useContext(AuthContext);
@@ -53,9 +54,10 @@ export default function AppRoutes() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="analytics" element={<AnalyticsDashboard />} />
-            <Route path="students" element={<StudentsPage />} />
+            <Route path="students" element={<AdminStudents />} />
             <Route path="departments" element={<AdminDepartments />} />
             <Route path="subjects" element={<AdminSubjects />} />
+            <Route path="teachers" element={<AdminTeachers />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 

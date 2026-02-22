@@ -51,7 +51,14 @@ exports.register = async (req, res, next) => {
       return res.status(409).json({ message: 'Email already registered' });
     }
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed, role, profileCompleted: false });
+    const user = await User.create({
+      name,
+      email,
+      password: hashed,
+      role,
+      profileCompleted: false,
+      active: true,
+    });
     if (role === 'hod') {
       const departmentId = req.body.department;
       if (!departmentId) {
@@ -85,6 +92,9 @@ exports.login = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+    if (user.active === false || user.status !== 'active') {
+      return res.status(403).json({ message: 'Account is inactive' });
+    }
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -107,6 +117,9 @@ exports.refreshToken = async (req, res) => {
     const decoded = jwt.verify(token, refreshSecret);
     const user = await User.findById(decoded.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.active === false || user.status !== 'active') {
+      return res.status(403).json({ message: 'Account is inactive' });
+    }
     const { accessToken, refreshToken } = buildTokens(user);
     res.cookie(REFRESH_COOKIE_NAME, refreshToken, cookieOptions);
     res.json({

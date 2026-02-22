@@ -7,10 +7,7 @@ const ClassEnrollment = require('../models/ClassEnrollment');
 const analyticsService = require('../services/analyticsService');
 
 async function loadTeacher(userId) {
-  const teacher = await TeacherProfile.findOne({ userId }).populate({
-    path: 'subjectsHandled',
-    select: '_id',
-  });
+  const teacher = await TeacherProfile.findOne({ userId });
   if (!teacher) {
     const err = new Error('Teacher profile not found');
     err.status = 404;
@@ -40,7 +37,11 @@ async function ensureTeacherOwnsSubject(teacher, subjectId) {
 exports.getSubjects = async (req, res, next) => {
   try {
     const teacher = await loadTeacher(req.user.userId);
-    const subjects = await Subject.find({ assignedTeacher: teacher._id }).populate('department', 'name code');
+    const assignedIds = (teacher.assignedSubjects || []).map((id) => id.toString());
+    if (!assignedIds.length) {
+      return res.json([]);
+    }
+    const subjects = await Subject.find({ _id: { $in: assignedIds } }).populate('department', 'name code');
     res.json(subjects);
   } catch (err) {
     next(err);
@@ -173,8 +174,14 @@ exports.getAttendance = async (req, res, next) => {
     const teacher = await loadTeacher(req.user.userId);
     if (req.query.subjectId) {
       await ensureTeacherOwnsSubject(teacher, req.query.subjectId);
-    } else if (teacher.subjectsHandled.length === 1) {
-      req.query.subjectId = teacher.subjectsHandled[0]._id;
+    } else {
+      const assignedList = teacher.assignedSubjects?.length
+        ? teacher.assignedSubjects
+        : teacher.subjectsHandled;
+      if (assignedList.length === 1) {
+        const item = assignedList[0];
+        req.query.subjectId = item._id ? item._id : item;
+      }
     }
     const filters = {};
     if (req.query.subjectId) filters.subjectId = req.query.subjectId;
