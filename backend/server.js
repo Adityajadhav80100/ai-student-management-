@@ -10,6 +10,9 @@ const analyticsRoutes = require('./routes/analytics');
 const adminRoutes = require('./routes/admin');
 const teacherRoutes = require('./routes/teacher');
 const hodRoutes = require('./routes/hod');
+const departmentRoutes = require('./routes/departments');
+const enrollmentRoutes = require('./routes/enrollments');
+const profileRoutes = require('./routes/profile');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -27,6 +30,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/hod', hodRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/departments', departmentRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Error handling
 app.use(errorHandler);

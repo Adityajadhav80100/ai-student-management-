@@ -1,19 +1,9 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import AuthLeftPanel from '../components/AuthLeftPanel';
 import { AuthContext } from '../context/AuthContext';
 
-const departments = [
-  'Computer Engineering',
-  'Information Technology',
-  'Electronics',
-  'Mechanical',
-  'Civil',
-  'Electrical',
-  'Chemical',
-  'Other',
-];
 const semesters = Array.from({ length: 8 }, (_, i) => i + 1);
 
 export default function Register() {
@@ -30,6 +20,36 @@ export default function Register() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [departmentError, setDepartmentError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadDepartments = async () => {
+      setDepartmentsLoading(true);
+      setDepartmentError('');
+      try {
+        const res = await api.get('/departments');
+        if (cancelled) return;
+        setDepartments(res.data);
+      } catch (err) {
+        if (!cancelled) {
+          setDepartmentError('Unable to load departments');
+        }
+      } finally {
+        if (!cancelled) {
+          setDepartmentsLoading(false);
+        }
+      }
+    };
+
+    loadDepartments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -53,7 +73,23 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      const res = await api.post('/auth/register', form);
+      const payload = {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+      };
+      if (form.role === 'student' || form.role === 'hod') {
+        payload.department = form.department;
+      }
+      if (form.role === 'student' && form.semester) {
+        payload.semester = Number(form.semester);
+      }
+      if (form.role === 'student' && form.rollNo) {
+        payload.rollNo = form.rollNo;
+      }
+
+      const res = await api.post('/auth/register', payload);
       setToken(res.data.accessToken);
       setUser(res.data.user);
       navigate(redirectToRole(res.data.user.role), { replace: true });
@@ -156,25 +192,37 @@ export default function Register() {
                     </div>
                   </>
                 )}
-                <div className="mb-3">
-                  <label className="block text-gray-700 font-semibold mb-1">
-                    {form.role === 'hod' ? 'Department (required for HOD)' : 'Department'}
-                  </label>
-                  <select
-                    name="department"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
-                    value={form.department}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select department</option>
-                    {departments.map(dep => (
-                      <option key={dep} value={dep}>{dep}</option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
+            <div className="mb-3">
+              <label className="block text-gray-700 font-semibold mb-1">
+                {form.role === 'hod' ? 'Department (required for HOD)' : 'Department'}
+              </label>
+              <select
+                name="department"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
+                value={form.department}
+                onChange={handleChange}
+                required
+                disabled={departmentsLoading || departments.length === 0}
+              >
+                <option value="">Select department</option>
+                {departments.map((dep) => (
+                  <option key={dep._id} value={dep._id}>
+                    {dep.name} {dep.code ? `(${dep.code})` : ''}
+                  </option>
+                ))}
+              </select>
+              {departmentsLoading && (
+                <p className="text-sm text-gray-500 mt-1">Loading departments…</p>
+              )}
+              {!departmentsLoading && departmentError && (
+                <p className="text-danger text-sm mt-1">{departmentError}</p>
+              )}
+              {!departmentsLoading && !departmentError && departments.length === 0 && (
+                <p className="text-danger text-sm mt-1">No departments are configured.</p>
+              )}
+            </div>
+          </>
+        )}
             <button
               type="submit"
               className={`w-full py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary/90 transition-all duration-200 shadow-soft ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}

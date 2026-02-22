@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
 const Marks = require('../models/Marks');
 const Subject = require('../models/Subject');
@@ -6,7 +7,10 @@ const ClassEnrollment = require('../models/ClassEnrollment');
 const analyticsService = require('../services/analyticsService');
 
 async function loadTeacher(userId) {
-  const teacher = await TeacherProfile.findOne({ userId }).populate('subjectsHandled');
+  const teacher = await TeacherProfile.findOne({ userId }).populate({
+    path: 'subjectsHandled',
+    select: '_id',
+  });
   if (!teacher) {
     const err = new Error('Teacher profile not found');
     err.status = 404;
@@ -15,19 +19,39 @@ async function loadTeacher(userId) {
   return teacher;
 }
 
-function ensureTeacherOwnsSubject(teacher, subjectId) {
-  const subjectIds = teacher.subjectsHandled.map((id) => id.toString());
-  if (!subjectIds.includes(subjectId.toString())) {
+async function ensureTeacherOwnsSubject(teacher, subjectId) {
+  if (!mongoose.Types.ObjectId.isValid(subjectId)) {
+    const err = new Error('Invalid subject identifier');
+    err.status = 400;
+    throw err;
+  }
+  const subject = await Subject.findOne({
+    _id: subjectId,
+    assignedTeacher: teacher._id,
+  }).populate('department', 'name code');
+  if (!subject) {
     const err = new Error('Not assigned to this subject');
     err.status = 403;
     throw err;
   }
+  return subject;
 }
 
 exports.getSubjects = async (req, res, next) => {
   try {
     const teacher = await loadTeacher(req.user.userId);
-    const subjects = await Subject.find({ assignedTeacher: teacher._id }).populate('department', 'name code');
+    const filters = {
+      assignedTeacher: teacher._id,
+    };
+    if (teacher.subjectsHandled?.length) {
+      filters._id = {
+        $in: teacher.subjectsHandled
+          .map((entry) => entry?._id)
+          .filter((id) => id)
+          .map((id) => id.toString()),
+      };
+    }
+    const subjects = await Subject.find(filters).populate('department', 'name code');
     res.json(subjects);
   } catch (err) {
     next(err);
@@ -37,9 +61,7 @@ exports.getSubjects = async (req, res, next) => {
 exports.getSubjectStudents = async (req, res, next) => {
   try {
     const teacher = await loadTeacher(req.user.userId);
-    ensureTeacherOwnsSubject(teacher, req.params.id);
-    const subject = await Subject.findById(req.params.id).populate('department', 'name code');
-    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+    const subject = await ensureTeacherOwnsSubject(teacher, req.params.id);
 
     const enrollments = await ClassEnrollment.find({
       subjectId: req.params.id,
@@ -56,6 +78,20 @@ exports.getSubjectStudents = async (req, res, next) => {
       acc[record.studentId.toString()] = record.status;
       return acc;
     }, {});
+
+    if (!enrollments.length) {
+      return res.json({
+        subject: {
+          id: subject._id,
+          name: subject.name,
+          code: subject.code,
+          semester: subject.semester,
+        },
+        students: [],
+        attendanceLocked: Boolean(attendanceDate && attendanceRecords.length),
+        attendanceDate: attendanceDate ? attendanceDate.toISOString().split('T')[0] : null,
+      });
+    }
 
     const students = await Promise.all(
       enrollments.map(async (enrollment) => {
@@ -102,7 +138,7 @@ function normalizeDay(dateValue) {
 exports.recordAttendance = async (req, res, next) => {
   try {
     const teacher = await loadTeacher(req.user.userId);
-    ensureTeacherOwnsSubject(teacher, req.body.subjectId);
+    await ensureTeacherOwnsSubject(teacher, req.body.subjectId);
     const enrollments = await ClassEnrollment.find({
       subjectId: req.body.subjectId,
       active: true,
@@ -147,7 +183,7 @@ exports.getAttendance = async (req, res, next) => {
   try {
     const teacher = await loadTeacher(req.user.userId);
     if (req.query.subjectId) {
-      ensureTeacherOwnsSubject(teacher, req.query.subjectId);
+      await ensureTeacherOwnsSubject(teacher, req.query.subjectId);
     } else if (teacher.subjectsHandled.length === 1) {
       req.query.subjectId = teacher.subjectsHandled[0]._id;
     }
@@ -166,7 +202,7 @@ exports.getAttendance = async (req, res, next) => {
 exports.recordMarks = async (req, res, next) => {
   try {
     const teacher = await loadTeacher(req.user.userId);
-    ensureTeacherOwnsSubject(teacher, req.body.subjectId);
+    await ensureTeacherOwnsSubject(teacher, req.body.subjectId);
     const enrollments = await ClassEnrollment.find({
       subjectId: req.body.subjectId,
       active: true,
@@ -215,7 +251,7 @@ exports.getMarks = async (req, res, next) => {
   try {
     const teacher = await loadTeacher(req.user.userId);
     if (req.query.subjectId) {
-      ensureTeacherOwnsSubject(teacher, req.query.subjectId);
+      await ensureTeacherOwnsSubject(teacher, req.query.subjectId);
     }
     const filters = {};
     if (req.query.subjectId) filters.subjectId = req.query.subjectId;

@@ -17,5 +17,7 @@ const studentProfileSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+studentProfileSchema.index({ department: 1, semester: 1 });
+
 module.exports = mongoose.model('StudentProfile', studentProfileSchema);
 

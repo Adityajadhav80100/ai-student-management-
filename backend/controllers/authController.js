@@ -53,11 +53,11 @@ exports.register = async (req, res, next) => {
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, password: hashed, role, profileCompleted: false });
     if (role === 'hod') {
-      const departmentName = (req.body.department || '').trim();
-      if (!departmentName) {
+      const departmentId = req.body.department;
+      if (!departmentId) {
         return res.status(400).json({ message: 'Department is required for HOD accounts' });
       }
-      const department = await Department.findOne({ name: departmentName });
+      const department = await Department.findById(departmentId);
       if (!department) {
         return res.status(400).json({ message: 'Selected department does not exist' });
       }

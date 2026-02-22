@@ -10,6 +10,10 @@ export default function CompleteProfile() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [departments, setDepartments] = useState([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [departmentError, setDepartmentError] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -21,6 +25,34 @@ export default function CompleteProfile() {
       else navigate('/student/dashboard');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadDepartments = async () => {
+      setDepartmentsLoading(true);
+      setDepartmentError('');
+      try {
+        const res = await api.get('/departments');
+        if (!cancelled) {
+          setDepartments(res.data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setDepartmentError('Unable to load departments');
+        }
+      } finally {
+        if (!cancelled) {
+          setDepartmentsLoading(false);
+        }
+      }
+    };
+
+    loadDepartments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!user) return null;
 
@@ -38,6 +70,7 @@ export default function CompleteProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setStatusMessage('Saving profile and enrolling you in your semester…');
     setLoading(true);
 
     try {
@@ -60,13 +93,14 @@ export default function CompleteProfile() {
       if (user.role === 'teacher') endpoint = '/profile/teacher';
       if (user.role === 'admin') endpoint = '/profile/admin';
 
-      await api.post(endpoint, formData, {
+      const response = await api.post(endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       // Mark profileCompleted locally and redirect to dashboard
       const nextUser = { ...user, profileCompleted: true };
       setUser(nextUser);
+      setStatusMessage('Enrollment complete. Redirecting…');
 
       if (user.role === 'admin') navigate('/admin/dashboard');
       else if (user.role === 'teacher') navigate('/teacher/dashboard');
@@ -77,11 +111,42 @@ export default function CompleteProfile() {
         err.response?.data?.message ||
         (Array.isArray(err.response?.data?.details) && err.response.data.details[0]?.message) ||
         'Failed to save profile';
-      setError(msg);
+      setError(`Oops! ${msg}`);
+      setStatusMessage('');
     } finally {
       setLoading(false);
     }
   };
+
+  const renderDepartmentSelect = (label, fieldName = 'department') => (
+    <div className="mb-4">
+      <label className="block text-gray-700 font-semibold mb-1">{label}</label>
+      <select
+        name={fieldName}
+        value={form[fieldName] || ''}
+        onChange={handleChange}
+        required
+        disabled={departmentsLoading || departments.length === 0}
+        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
+      >
+        <option value="">Select department</option>
+        {departments.map((dep) => (
+          <option key={dep._id} value={dep._id}>
+            {dep.name} {dep.code ? `(${dep.code})` : ''}
+          </option>
+        ))}
+      </select>
+      {departmentsLoading && (
+        <p className="text-xs text-gray-500 mt-1">Loading departments…</p>
+      )}
+      {!departmentsLoading && departmentError && (
+        <p className="text-danger text-xs mt-1">{departmentError}</p>
+      )}
+      {!departmentsLoading && !departmentError && departments.length === 0 && (
+        <p className="text-danger text-xs mt-1">No departments are available.</p>
+      )}
+    </div>
+  );
 
   const renderFields = () => {
     if (user.role === 'student') {
@@ -107,31 +172,19 @@ export default function CompleteProfile() {
               required
             />
           </div>
-          <div className="mb-4 flex gap-4">
-            <div className="flex-1">
-              <label className="block text-gray-700 font-semibold mb-1">Department (ID)</label>
-              <input
-                type="text"
-                name="department"
-                placeholder="Department ObjectId"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="w-32">
-              <label className="block text-gray-700 font-semibold mb-1">Semester</label>
-              <input
-                type="number"
-                min="1"
-                max="12"
-                name="semester"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
+      {renderDepartmentSelect('Department', 'departmentId')}
+      <div className="mb-4 w-full lg:w-40">
+        <label className="block text-gray-700 font-semibold mb-1">Semester</label>
+        <input
+          type="number"
+          min="1"
+          max="12"
+          name="semester"
+          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
+          onChange={handleChange}
+          required
+        />
+      </div>
           <div className="mb-4">
             <label className="block text-gray-700 font-semibold mb-1">Phone</label>
             <input
@@ -172,7 +225,7 @@ export default function CompleteProfile() {
       );
     }
 
-    if (user.role === 'teacher') {
+    if (user.role === 'teacher' || user.role === 'hod') {
       return (
         <>
           <div className="mb-4">
@@ -195,34 +248,10 @@ export default function CompleteProfile() {
               required
             />
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 font-semibold mb-1">Department (ID)</label>
-            <input
-              type="text"
-              name="department"
-              placeholder="Department ObjectId"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 font-semibold mb-1">Subjects Handled (IDs, comma separated)</label>
-            <input
-              type="text"
-              name="subjectsHandled"
-              placeholder="Subject ObjectIds, comma separated"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
-              onChange={(e) => {
-                const raw = e.target.value;
-                const ids = raw
-                  .split(',')
-                  .map((v) => v.trim())
-                  .filter(Boolean);
-                setForm((prev) => ({ ...prev, subjectsHandled: ids }));
-              }}
-            />
-          </div>
+          {renderDepartmentSelect(
+            user.role === 'hod' ? 'Department (HOD assignment)' : 'Department',
+            'department'
+          )}
           <div className="mb-4">
             <label className="block text-gray-700 font-semibold mb-1">Phone</label>
             <input
@@ -291,6 +320,9 @@ export default function CompleteProfile() {
         {error && <div className="text-danger mb-4 text-center animate-shake">{error}</div>}
         <form onSubmit={handleSubmit}>
           {renderFields()}
+          {statusMessage && (
+            <p className="text-sm text-gray-500 mb-3 text-center">{statusMessage}</p>
+          )}
           <button
             type="submit"
             disabled={loading}

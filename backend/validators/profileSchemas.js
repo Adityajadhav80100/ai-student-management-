@@ -13,7 +13,8 @@ const studentProfileBody = Joi.object({
   photoUrl: Joi.string().uri().allow('', null),
   currentCGPA: Joi.number().min(0).max(10).allow(null),
   section: Joi.string().trim().allow('', null),
-});
+})
+  .rename('departmentId', 'department', { override: true, alias: true });
 
 const teacherProfileBody = Joi.object({
   fullName: Joi.string().trim().min(2).max(100).required(),

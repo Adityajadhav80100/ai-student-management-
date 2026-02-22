@@ -39,12 +39,13 @@ export default function TeacherMarks() {
       setLoading(true);
       setError('');
       try {
-        const { data } = await api.get(`/teacher/subjects/${selectedSubject}/students`);
-        setStudents(data);
-        const initial = {};
-        data.forEach((item) => {
-          initial[item.student._id] = item.analytics?.marksAveragePercent ?? '';
-        });
+      const { data } = await api.get(`/teacher/subjects/${selectedSubject}/students`);
+      const studentList = data.students || [];
+      setStudents(studentList);
+      const initial = {};
+      studentList.forEach((item) => {
+        initial[item.student._id] = item.analytics?.marksAveragePercent ?? '';
+      });
         setMarksMap(initial);
       } catch (err) {
         setError('Failed to load students');
