@@ -4,10 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build",
+    "build": "node ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "postinstall": "chmod +x node_modules/vite/bin/vite.js"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.11",
@@ -17,8 +16,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.0",
-    "recharts": "^2.7.2",
-    "vite": "^4.5.14"
+    "recharts": "^2.7.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.1.0",
@@ -26,6 +24,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.33.2",
     "prettier": "^3.2.5",
-    "tailwindcss": "^3.4.1"
+    "tailwindcss": "^3.4.1",
+    "vite": "^4.5.14"
   }
 }
