@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-console.log('Loaded API URL:', import.meta.env.VITE_API_URL);
+import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -16,25 +14,25 @@ export function setAccessToken(token) {
 }
 
 function isPublicPath() {
-  const publicPaths = ['/login', '/register'];
+  const publicPaths = ["/login", "/register"];
   return publicPaths.includes(window.location.pathname);
 }
 
 function clearAuth() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
   setAccessToken(null);
 }
 
 function handleUnauthorized() {
   clearAuth();
   if (!isPublicPath()) {
-    window.location.href = '/login';
+    window.location.href = "/login";
   }
 }
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }

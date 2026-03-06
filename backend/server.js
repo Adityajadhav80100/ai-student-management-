@@ -18,7 +18,18 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 // Middleware
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+const clientUrl = process.env.CLIENT_URL || 'https://helpful-naiad-fd7500.netlify.app';
+if (!process.env.CLIENT_URL) {
+  console.warn(
+    'CLIENT_URL is not set, defaulting to the documented Netlify origin. Set CLIENT_URL in Render to Netlify URL for production.'
+  );
+}
+app.use(
+  cors({
+    origin: clientUrl,
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
