@@ -1,105 +1,79 @@
-import React, { createContext, useEffect, useMemo, useState } from 'react';
-import api, { setAccessToken } from '../services/api';
+import React, { createContext, useEffect, useMemo, useState } from "react";
+import api, { setAccessToken } from "../services/api";
 
 export const AuthContext = createContext({
-  user: null,
-  token: null,
-  login: async () => {},
-  logout: async () => {},
-  refreshing: false,
-  ready: false,
+user: null,
+token: null,
+login: async () => {},
+logout: async () => {},
+ready: false,
 });
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('token') || null);
-  const [ready, setReady] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+const [user, setUser] = useState(() => {
+const saved = localStorage.getItem("user");
+return saved ? JSON.parse(saved) : null;
+});
 
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('user');
-    }
-  }, [user]);
+const [token, setToken] = useState(() => localStorage.getItem("token") || null);
+const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token);
-      setAccessToken(token);
-    } else {
-      localStorage.removeItem('token');
-      setAccessToken(null);
-    }
-  }, [token]);
+// Save user in localStorage
+useEffect(() => {
+if (user) {
+localStorage.setItem("user", JSON.stringify(user));
+} else {
+localStorage.removeItem("user");
+}
+}, [user]);
 
-  useEffect(() => {
-    const publicPaths = ['/login', '/register'];
-    const currentPath = window.location.pathname;
-    if (publicPaths.includes(currentPath)) {
-      setReady(true);
-      return;
-    }
+// Save token and attach to axios
+useEffect(() => {
+if (token) {
+localStorage.setItem("token", token);
+setAccessToken(token);
+} else {
+localStorage.removeItem("token");
+setAccessToken(null);
+}
+}, [token]);
 
-    async function restoreSession() {
-      setRefreshing(true);
-      try {
-        const { data } = await api.post('/auth/refresh');
-        setUser(data.user);
-        setToken(data.accessToken);
-      } catch (err) {
-        if (token) {
-          setUser(null);
-          setToken(null);
-        }
-      } finally {
-        setRefreshing(false);
-        setReady(true);
-      }
-    }
+// Mark app ready immediately (no refresh endpoint)
+useEffect(() => {
+setReady(true);
+}, []);
 
-    if (!user && !token) {
-      restoreSession();
-    } else {
-      setReady(true);
-    }
-  }, []);
+// LOGIN
+const login = async (credentials) => {
+const { data } = await api.post("/auth/login", credentials);
+setUser(data.user);
+setToken(data.accessToken);
+return data.user;
+};
 
-  const login = async (credentials) => {
-    const { data } = await api.post('/auth/login', credentials);
-    setUser(data.user);
-    setToken(data.accessToken);
-    return data.user;
-  };
+// LOGOUT
+const logout = async () => {
+try {
+await api.post("/auth/logout");
+} catch (err) {
+// ignore if endpoint doesn't exist
+}
+setUser(null);
+setToken(null);
+};
 
-  const logout = async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch (err) {
-      /* ignore */
-    } finally {
-      setUser(null);
-      setToken(null);
-    }
-  };
+const value = useMemo(
+() => ({
+user,
+token,
+login,
+logout,
+setUser,
+setToken,
+ready,
+}),
+[user, token, ready]
+);
 
-  const value = useMemo(
-    () => ({
-      user,
-      token,
-      login,
-      logout,
-      setUser,
-      setToken,
-      refreshing,
-      ready,
-    }),
-    [user, token, refreshing, ready]
-  );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
