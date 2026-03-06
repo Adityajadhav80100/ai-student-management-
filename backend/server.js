@@ -18,15 +18,18 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 // Middleware
-const clientUrl = process.env.CLIENT_URL || 'https://helpful-naiad-fd7500.netlify.app';
+const CLIENT_URL =
+  process.env.CLIENT_URL || 'https://helpful-naiad-fd7500.netlify.app';
 if (!process.env.CLIENT_URL) {
   console.warn(
-    'CLIENT_URL is not set, defaulting to the documented Netlify origin. Set CLIENT_URL in Render to Netlify URL for production.'
+    'CLIENT_URL not provided; falling back to the documented Netlify URL. Set CLIENT_URL on Render to the frontend origin for production.'
   );
+} else {
+  console.log(`CLIENT_URL resolved to ${CLIENT_URL}`);
 }
 app.use(
   cors({
-    origin: clientUrl,
+    origin: CLIENT_URL,
     credentials: true,
   })
 );

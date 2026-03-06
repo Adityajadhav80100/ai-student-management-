@@ -45,7 +45,7 @@ setReady(true);
 
 // LOGIN
 const login = async (credentials) => {
-const { data } = await api.post("/auth/login", credentials);
+const { data } = await api.post("/auth/login", credentials); // hits /api/auth/login thanks to the baseURL
 setUser(data.user);
 setToken(data.accessToken);
 return data.user;
