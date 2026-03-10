@@ -4,6 +4,7 @@ import api from '../../services/api';
 
 export default function StudentDashboard() {
   const [analytics, setAnalytics] = useState(null);
+  const [extraClassData, setExtraClassData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -12,8 +13,12 @@ export default function StudentDashboard() {
       setLoading(true);
       setError('');
       try {
-        const res = await api.get('/analytics/student/me');
-        setAnalytics(res.data);
+        const [analyticsRes, extraClassesRes] = await Promise.all([
+          api.get('/analytics/student/me'),
+          api.get('/students/extra-classes'),
+        ]);
+        setAnalytics(analyticsRes.data);
+        setExtraClassData(extraClassesRes.data);
       } catch (err) {
         setError('Unable to load your analytics');
       } finally {
@@ -45,13 +50,13 @@ export default function StudentDashboard() {
         change: `Pass ${analytics.performance?.passProbability ?? 0}%`,
       },
       {
-        title: 'Risk Level',
-        value: analytics.riskLevel || 'Low',
+        title: 'Defaulter Status',
+        value: extraClassData?.defaulterStatus?.isDefaulter ? 'Defaulter' : 'Clear',
         icon: 'warning',
-        change: analytics.riskDetails || 'Stability steady',
+        change: extraClassData?.defaulterStatus?.isDefaulter ? 'Extra class may be assigned' : 'No action needed',
       },
     ];
-  }, [analytics]);
+  }, [analytics, extraClassData]);
 
   const recommendationList = analytics?.recommendations || [];
 
@@ -136,6 +141,40 @@ export default function StudentDashboard() {
                   ))}
                 </ul>
               )}
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-card p-6">
+              <h2 className="text-xl font-semibold">Assigned Extra Classes</h2>
+              <div className="mt-4 space-y-3">
+                {(extraClassData?.extraClasses || []).slice(0, 3).map((extraClass) => (
+                  <div key={extraClass.id} className="rounded-2xl bg-background border border-gray-100 p-4">
+                    <div className="font-semibold">{extraClass.subject?.name}</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {new Date(extraClass.scheduledAt).toLocaleString()} • {extraClass.location}
+                    </div>
+                  </div>
+                ))}
+                {!extraClassData?.extraClasses?.length && (
+                  <p className="text-sm text-gray-500">No extra classes assigned right now.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-card p-6">
+              <h2 className="text-xl font-semibold">Notifications</h2>
+              <div className="mt-4 space-y-3">
+                {(extraClassData?.notifications || []).slice(0, 3).map((notification) => (
+                  <div key={notification._id} className="rounded-2xl bg-background border border-gray-100 p-4">
+                    <div className="font-semibold">{notification.title}</div>
+                    <div className="text-sm text-gray-500 mt-1">{notification.message}</div>
+                  </div>
+                ))}
+                {!extraClassData?.notifications?.length && (
+                  <p className="text-sm text-gray-500">No notifications yet.</p>
+                )}
+              </div>
             </div>
           </div>
         </>

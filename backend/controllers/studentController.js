@@ -3,7 +3,10 @@ const User = require('../models/User');
 const TeacherProfile = require('../models/TeacherProfile');
 const Attendance = require('../models/Attendance');
 const Marks = require('../models/Marks');
+const ExtraClassStudent = require('../models/ExtraClassStudent');
+const Notification = require('../models/Notification');
 const analyticsService = require('../services/analyticsService');
+const { getStudentDefaulterStatus } = require('../services/defaulterService');
 const { determineRiskLevel } = require('../utils/riskUtils');
 const { getDepartmentForHod } = require('../utils/hodUtils');
 
@@ -33,8 +36,17 @@ exports.getMe = async (req, res, next) => {
   try {
     const profile = await resolveProfile(req.user.userId);
     const analytics = await analyticsService.getStudentAnalytics(profile._id);
+    const defaulterStatus = await getStudentDefaulterStatus(profile._id);
     res.json({
       profile,
+      defaulterStatus: defaulterStatus
+        ? {
+            isDefaulter: defaulterStatus.isDefaulter,
+            defaulterReasons: defaulterStatus.defaulterReasons,
+            attendancePercentage: defaulterStatus.attendancePercentage,
+            marksAveragePercent: defaulterStatus.marksAveragePercent,
+          }
+        : null,
       analytics: {
         performance: analytics.performance,
         riskLevel: analytics.riskLevel,
@@ -42,6 +54,60 @@ exports.getMe = async (req, res, next) => {
         attendanceSummary: analytics.attendanceSummary,
         marksSummary: analytics.marksSummary,
       },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getExtraClasses = async (req, res, next) => {
+  try {
+    const profile = await resolveProfile(req.user.userId);
+    const [defaulterStatus, extraClassRecords, notifications] = await Promise.all([
+      getStudentDefaulterStatus(profile._id),
+      ExtraClassStudent.find({ studentId: profile._id })
+        .populate({
+          path: 'extraClassId',
+          populate: [
+            { path: 'subjectId', select: 'name code semester' },
+            {
+              path: 'teacherId',
+              select: 'fullName employeeId userId',
+              populate: { path: 'userId', select: 'name email' },
+            },
+            { path: 'departmentId', select: 'name code' },
+          ],
+        })
+        .sort({ createdAt: -1 })
+        .lean(),
+      Notification.find({ userId: req.user.userId, type: 'extra_class' })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+    ]);
+
+    res.json({
+      defaulterStatus: defaulterStatus
+        ? {
+            isDefaulter: defaulterStatus.isDefaulter,
+            defaulterReasons: defaulterStatus.defaulterReasons,
+            attendancePercentage: defaulterStatus.attendancePercentage,
+            marksAveragePercent: defaulterStatus.marksAveragePercent,
+          }
+        : null,
+      extraClasses: extraClassRecords.map((record) => ({
+        id: record.extraClassId?._id,
+        attendanceStatus: record.attendanceStatus,
+        attendanceMarkedAt: record.attendanceMarkedAt,
+        subject: record.extraClassId?.subjectId,
+        teacher: record.extraClassId?.teacherId,
+        department: record.extraClassId?.departmentId,
+        scheduledAt: record.extraClassId?.scheduledAt,
+        location: record.extraClassId?.location,
+        reason: record.extraClassId?.reason,
+        notes: record.extraClassId?.notes,
+      })),
+      notifications,
     });
   } catch (err) {
     next(err);

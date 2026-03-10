@@ -5,6 +5,7 @@ import api from '../../services/api';
 
 export default function AdminDashboard() {
   const [overview, setOverview] = useState(null);
+  const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -13,8 +14,12 @@ export default function AdminDashboard() {
       setLoading(true);
       setError('');
       try {
-        const res = await api.get('/analytics/admin/overview');
-        setOverview(res.data);
+        const [overviewRes, insightsRes] = await Promise.all([
+          api.get('/analytics/admin/overview'),
+          api.get('/analytics/admin/defaulter-insights'),
+        ]);
+        setOverview(overviewRes.data);
+        setInsights(insightsRes.data);
       } catch (err) {
         setError(err.response?.data?.message || 'Unable to load overview');
       } finally {
@@ -52,12 +57,20 @@ export default function AdminDashboard() {
         spark: [{ value: overview.overallAttendance - 5 }, { value: overview.overallAttendance - 2 }, { value: overview.overallAttendance }, { value: overview.overallAttendance + 1 }],
       },
       {
-        title: 'High-Risk Students',
-        value: overview.highRiskStudents,
+        title: 'Total Defaulters',
+        value: overview.totalDefaulters ?? 0,
         icon: 'warning',
         change: '+0%',
         changeType: 'neutral',
-        spark: [{ value: overview.highRiskStudents - 1 }, { value: overview.highRiskStudents }, { value: overview.highRiskStudents }],
+        spark: [{ value: Math.max((overview.totalDefaulters ?? 0) - 2, 0) }, { value: overview.totalDefaulters ?? 0 }, { value: overview.totalDefaulters ?? 0 }],
+      },
+      {
+        title: 'Extra Classes',
+        value: overview.extraClassesScheduled ?? 0,
+        icon: 'event_note',
+        change: 'active',
+        changeType: 'neutral',
+        spark: [{ value: Math.max((overview.extraClassesScheduled ?? 0) - 1, 0) }, { value: overview.extraClassesScheduled ?? 0 }, { value: overview.extraClassesScheduled ?? 0 }],
       },
     ];
   }, [overview]);
@@ -67,7 +80,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-primary tracking-tight">Admin Dashboard</h1>
-          <p className="text-gray-500 mt-1">High-level overview of departments, subjects, and student health.</p>
+          <p className="text-gray-500 mt-1">Overview of defaulters, remedial scheduling, and improvement tracking.</p>
         </div>
       </div>
 
@@ -80,7 +93,7 @@ export default function AdminDashboard() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6 mb-10">
             {stats.map((stat) => (
               <StatCard
                 key={stat.title}
@@ -93,6 +106,31 @@ export default function AdminDashboard() {
                 <MiniSparkline data={stat.spark} color="#6366F1" />
               </StatCard>
             ))}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-card p-6">
+              <div className="text-xs uppercase tracking-wide text-gray-400">Improvement Tracking</div>
+              <div className="text-3xl font-semibold mt-2">{insights?.improvementTracking?.improvementRate ?? 0}%</div>
+              <p className="text-sm text-gray-500 mt-2">
+                {insights?.improvementTracking?.improvedStudents ?? 0} of {insights?.improvementTracking?.studentsTracked ?? 0} tracked assignments improved after scheduling.
+              </p>
+            </div>
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-card p-6">
+              <div className="text-xs uppercase tracking-wide text-gray-400">Extra Class Attendance</div>
+              <div className="mt-4 space-y-3 text-sm text-gray-600">
+                <div>Pending: {insights?.extraClassAttendance?.pending ?? 0}</div>
+                <div>Present: {insights?.extraClassAttendance?.present ?? 0}</div>
+                <div>Absent: {insights?.extraClassAttendance?.absent ?? 0}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-card p-6">
+              <div className="text-xs uppercase tracking-wide text-gray-400">Risk Snapshot</div>
+              <div className="text-3xl font-semibold mt-2">{overview?.highRiskStudents ?? 0}</div>
+              <p className="text-sm text-gray-500 mt-2">
+                Students currently classified as high risk across attendance and marks analytics.
+              </p>
+            </div>
           </div>
         </>
       )}

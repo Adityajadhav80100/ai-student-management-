@@ -14,15 +14,20 @@ import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminDepartments from '../pages/admin/AdminDepartments';
 import AdminSubjects from '../pages/admin/AdminSubjects';
 import AdminStudents from '../pages/admin/AdminStudents';
+import AdminDefaulters from '../pages/admin/AdminDefaulters';
+import AdminCreateExtraClass from '../pages/admin/AdminCreateExtraClass';
+import AdminExtraClasses from '../pages/admin/AdminExtraClasses';
 import AnalyticsDashboard from '../pages/AnalyticsDashboard';
 import TeacherDashboard from '../pages/teacher/TeacherDashboard';
 import TeacherSubjects from '../pages/teacher/TeacherSubjects';
 import TeacherAttendance from '../pages/teacher/TeacherAttendance';
 import TeacherMarks from '../pages/teacher/TeacherMarks';
 import TeacherStudentAnalytics from '../pages/teacher/TeacherStudentAnalytics';
+import TeacherExtraClasses from '../pages/teacher/TeacherExtraClasses';
 import StudentDashboard from '../pages/student/StudentDashboard';
 import StudentAttendance from '../pages/student/StudentAttendance';
 import StudentMarks from '../pages/student/StudentMarks';
+import StudentExtraClasses from '../pages/student/StudentExtraClasses';
 import MyAnalytics from '../pages/MyAnalytics';
 import MyProfile from '../pages/student/MyProfile';
 import HodDashboard from '../pages/hod/HodDashboard';
@@ -55,6 +60,9 @@ export default function AppRoutes() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="analytics" element={<AnalyticsDashboard />} />
             <Route path="students" element={<AdminStudents />} />
+            <Route path="defaulters" element={<AdminDefaulters />} />
+            <Route path="extra-classes/create" element={<AdminCreateExtraClass />} />
+            <Route path="extra-classes" element={<AdminExtraClasses />} />
             <Route path="departments" element={<AdminDepartments />} />
             <Route path="subjects" element={<AdminSubjects />} />
             <Route path="teachers" element={<AdminTeachers />} />
@@ -68,6 +76,7 @@ export default function AppRoutes() {
             <Route path="attendance" element={<TeacherAttendance />} />
             <Route path="marks" element={<TeacherMarks />} />
             <Route path="analytics" element={<TeacherStudentAnalytics />} />
+            <Route path="extra-classes" element={<TeacherExtraClasses />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 
@@ -83,6 +92,7 @@ export default function AppRoutes() {
             <Route path="attendance" element={<StudentAttendance />} />
             <Route path="marks" element={<StudentMarks />} />
             <Route path="analytics" element={<MyAnalytics />} />
+            <Route path="extra-classes" element={<StudentExtraClasses />} />
             <Route path="profile" element={<MyProfile />} />
             <Route path="*" element={<NotFound />} />
           </Route>

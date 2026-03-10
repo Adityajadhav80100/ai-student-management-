@@ -1,11 +1,12 @@
 import React, { useContext, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthLeftPanel from '../components/AuthLeftPanel';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,11 +35,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex w-full max-w-4xl bg-white/80 rounded-2xl shadow-card overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+      <div className="flex w-full max-w-5xl bg-white/80 rounded-2xl shadow-card overflow-hidden">
         <AuthLeftPanel />
-        <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-16 bg-white/60 backdrop-blur-md">
-          <form onSubmit={handleSubmit} className="w-full max-w-sm glassmorphism p-8 rounded-2xl shadow-soft">
+        <div className="flex-1 flex flex-col justify-center items-center p-6 md:p-12 bg-white/60 backdrop-blur-md">
+          <form onSubmit={handleSubmit} className="w-full max-w-md glassmorphism p-6 md:p-8 rounded-2xl shadow-soft">
             <h2 className="text-3xl font-extrabold mb-6 text-center text-primary">Sign in to your account</h2>
             {error && <div className="text-danger mb-4 text-center animate-shake">{error}</div>}
             <div className="mb-4">
@@ -56,15 +57,24 @@ export default function Login() {
             </div>
             <div className="mb-4">
               <label className="block text-gray-700 font-semibold mb-1">Password</label>
-              <input
-                type="password"
-                name="password"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  className="w-full px-4 py-3 pr-20 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-primary hover:text-primary/80"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
             <div className="flex items-center justify-between mb-6">
               <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
@@ -93,9 +103,9 @@ export default function Login() {
             </button>
             <div className="mt-6 text-center text-gray-500">
               Don&apos;t have an account?{' '}
-              <a href="/register" className="text-primary font-semibold hover:underline">
+              <Link to="/register" className="text-primary font-semibold hover:underline">
                 Sign up
-              </a>
+              </Link>
             </div>
           </form>
         </div>

@@ -8,6 +8,10 @@ const User = require('../models/User');
 const TimetableEntry = require('../models/TimetableEntry');
 const StudentProfile = require('../models/StudentProfile');
 const ClassEnrollment = require('../models/ClassEnrollment');
+const ExtraClass = require('../models/ExtraClass');
+const ExtraClassStudent = require('../models/ExtraClassStudent');
+const Notification = require('../models/Notification');
+const { getDefaulterStudents } = require('../services/defaulterService');
 const { syncTeacherAssignment, ensureTeacherExists } = require('../utils/teacherAssignment');
 
 const EMPLOYEE_PREFIX = 'TCH-';
@@ -246,6 +250,169 @@ exports.listStudents = async (req, res, next) => {
       .lean();
 
     res.json({ total: students.length, students });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.listDefaulters = async (req, res, next) => {
+  try {
+    const students = await getDefaulterStudents(req.query);
+    res.json({ total: students.length, students });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.createExtraClass = async (req, res, next) => {
+  try {
+    const students = await StudentProfile.find({ _id: { $in: req.body.studentIds } })
+      .populate('userId', 'name email')
+      .lean();
+    if (students.length !== req.body.studentIds.length) {
+      return res.status(404).json({ message: 'One or more students were not found' });
+    }
+
+    const subject = await Subject.findById(req.body.subjectId).populate('department', 'name code');
+    if (!subject) {
+      return res.status(404).json({ message: 'Subject not found' });
+    }
+
+    const teacher = await TeacherProfile.findById(req.body.teacherId).populate('userId', 'name email');
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
+
+    const mismatchedStudent = students.find(
+      (student) => student.department.toString() !== subject.department._id.toString()
+    );
+    if (mismatchedStudent) {
+      return res.status(400).json({ message: 'Selected students must belong to the subject department' });
+    }
+
+    const extraClass = await ExtraClass.create({
+      subjectId: subject._id,
+      teacherId: teacher._id,
+      scheduledBy: req.user.userId,
+      departmentId: subject.department._id,
+      scheduledAt: new Date(req.body.scheduledAt),
+      location: req.body.location,
+      reason: req.body.reason || 'both',
+      notes: req.body.notes || '',
+    });
+
+    await ExtraClassStudent.insertMany(
+      students.map((student) => ({
+        extraClassId: extraClass._id,
+        studentId: student._id,
+      }))
+    );
+
+    const notificationMessage = `${subject.name} extra class is scheduled on ${new Date(
+      req.body.scheduledAt
+    ).toLocaleString('en-US')} at ${req.body.location}.`;
+
+    const notificationDocs = [
+      ...students.map((student) => ({
+        userId: student.userId._id,
+        title: 'Extra class assigned',
+        message: notificationMessage,
+        type: 'extra_class',
+        data: {
+          extraClassId: extraClass._id,
+          subjectId: subject._id,
+          teacherId: teacher._id,
+        },
+      })),
+      teacher.userId
+        ? {
+            userId: teacher.userId._id,
+            title: 'New extra class assigned',
+            message: `${subject.name} extra class assigned for ${students.length} students.`,
+            type: 'extra_class',
+            data: {
+              extraClassId: extraClass._id,
+              subjectId: subject._id,
+            },
+          }
+        : null,
+    ].filter(Boolean);
+    if (notificationDocs.length) {
+      await Notification.insertMany(notificationDocs);
+    }
+
+    const populated = await ExtraClass.findById(extraClass._id)
+      .populate('subjectId', 'name code semester')
+      .populate({
+        path: 'teacherId',
+        select: 'fullName employeeId userId',
+        populate: { path: 'userId', select: 'name email' },
+      })
+      .populate('departmentId', 'name code')
+      .populate('scheduledBy', 'name email')
+      .lean();
+
+    const classStudents = await ExtraClassStudent.find({ extraClassId: extraClass._id })
+      .populate({
+        path: 'studentId',
+        select: 'fullName rollNumber semester section department userId',
+        populate: [
+          { path: 'department', select: 'name code' },
+          { path: 'userId', select: 'name email' },
+        ],
+      })
+      .lean();
+
+    res.status(201).json({
+      message: 'Extra class scheduled successfully',
+      extraClass: {
+        ...populated,
+        students: classStudents,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.listExtraClasses = async (req, res, next) => {
+  try {
+    const filters = {};
+    if (req.query.departmentId) filters.departmentId = req.query.departmentId;
+    if (req.query.subjectId) filters.subjectId = req.query.subjectId;
+    if (req.query.teacherId) filters.teacherId = req.query.teacherId;
+
+    const extraClasses = await ExtraClass.find(filters)
+      .sort({ scheduledAt: -1 })
+      .populate('subjectId', 'name code semester')
+      .populate({
+        path: 'teacherId',
+        select: 'fullName employeeId userId',
+        populate: { path: 'userId', select: 'name email' },
+      })
+      .populate('departmentId', 'name code')
+      .lean();
+
+    const mappings = await ExtraClassStudent.find({
+      extraClassId: { $in: extraClasses.map((item) => item._id) },
+    })
+      .populate('studentId', 'fullName rollNumber semester section')
+      .lean();
+
+    const grouped = mappings.reduce((acc, item) => {
+      const key = item.extraClassId.toString();
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+
+    res.json({
+      total: extraClasses.length,
+      extraClasses: extraClasses.map((item) => ({
+        ...item,
+        students: grouped[item._id.toString()] || [],
+      })),
+    });
   } catch (err) {
     next(err);
   }

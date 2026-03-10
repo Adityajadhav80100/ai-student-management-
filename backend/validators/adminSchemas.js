@@ -109,6 +109,22 @@ const assignHodBody = Joi.object({
   teacherProfileId: objectId.required(),
 });
 
+const defaulterQuery = Joi.object({
+  departmentId: objectId.optional(),
+  subjectId: objectId.optional(),
+  semester: Joi.number().integer().min(1).max(12).optional(),
+});
+
+const extraClassBody = Joi.object({
+  studentIds: Joi.array().items(objectId).min(1).unique().required(),
+  teacherId: objectId.required(),
+  subjectId: objectId.required(),
+  scheduledAt: Joi.date().required(),
+  location: Joi.string().trim().min(2).max(200).required(),
+  reason: Joi.string().valid('attendance', 'marks', 'both').optional(),
+  notes: Joi.string().trim().allow('', null).optional(),
+});
+
 module.exports = {
   departmentBody,
   departmentUpdateBody,
@@ -126,4 +142,6 @@ module.exports = {
   adminStudentQuery,
   teacherIdRoute,
   assignSubjectsBody,
+  defaulterQuery,
+  extraClassBody,
 };

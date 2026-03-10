@@ -9,6 +9,7 @@ const {
   teacherMarksBody,
   attendanceQuery,
   marksQuery,
+  extraClassAttendanceBody,
 } = require('../validators/teacherSchemas');
 
 router.use(auth, requireRole('teacher', 'hod'));
@@ -25,5 +26,11 @@ router.get('/attendance', validate({ query: attendanceQuery }), teacherControlle
 
 router.post('/marks', validate({ body: teacherMarksBody }), teacherController.recordMarks);
 router.get('/marks', validate({ query: marksQuery }), teacherController.getMarks);
+router.get('/extra-classes', teacherController.getAssignedExtraClasses);
+router.patch(
+  '/extra-classes/:id/attendance',
+  validate({ body: extraClassAttendanceBody }),
+  teacherController.markExtraClassAttendance
+);
 
 module.exports = router;

@@ -4,6 +4,8 @@ const Marks = require('../models/Marks');
 const Subject = require('../models/Subject');
 const TeacherProfile = require('../models/TeacherProfile');
 const ClassEnrollment = require('../models/ClassEnrollment');
+const ExtraClass = require('../models/ExtraClass');
+const ExtraClassStudent = require('../models/ExtraClassStudent');
 const analyticsService = require('../services/analyticsService');
 
 async function loadTeacher(userId) {
@@ -256,6 +258,82 @@ exports.getMarks = async (req, res, next) => {
       .populate('studentId', 'fullName rollNumber')
       .sort({ examDate: -1 });
     res.json(records);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getAssignedExtraClasses = async (req, res, next) => {
+  try {
+    const teacher = await loadTeacher(req.user.userId);
+    const extraClasses = await ExtraClass.find({ teacherId: teacher._id })
+      .sort({ scheduledAt: 1 })
+      .populate('subjectId', 'name code semester')
+      .populate('departmentId', 'name code')
+      .lean();
+
+    const mappings = await ExtraClassStudent.find({
+      extraClassId: { $in: extraClasses.map((item) => item._id) },
+    })
+      .populate({
+        path: 'studentId',
+        select: 'fullName rollNumber semester section department',
+        populate: { path: 'department', select: 'name code' },
+      })
+      .lean();
+
+    const grouped = mappings.reduce((acc, item) => {
+      const key = item.extraClassId.toString();
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+
+    res.json({
+      total: extraClasses.length,
+      extraClasses: extraClasses.map((item) => ({
+        ...item,
+        students: grouped[item._id.toString()] || [],
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.markExtraClassAttendance = async (req, res, next) => {
+  try {
+    const teacher = await loadTeacher(req.user.userId);
+    const extraClass = await ExtraClass.findOne({
+      _id: req.params.id,
+      teacherId: teacher._id,
+    });
+    if (!extraClass) {
+      return res.status(404).json({ message: 'Extra class not found' });
+    }
+
+    const studentIds = req.body.records.map((record) => record.studentId);
+    const mappings = await ExtraClassStudent.find({
+      extraClassId: extraClass._id,
+      studentId: { $in: studentIds },
+    }).lean();
+    if (mappings.length !== studentIds.length) {
+      return res.status(400).json({ message: 'One or more students are not assigned to this extra class' });
+    }
+
+    await Promise.all(
+      req.body.records.map((record) =>
+        ExtraClassStudent.findOneAndUpdate(
+          { extraClassId: extraClass._id, studentId: record.studentId },
+          {
+            attendanceStatus: record.attendanceStatus,
+            attendanceMarkedAt: new Date(),
+          }
+        )
+      )
+    );
+
+    res.json({ message: 'Extra class attendance updated' });
   } catch (err) {
     next(err);
   }

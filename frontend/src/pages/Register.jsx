@@ -19,6 +19,7 @@ export default function Register() {
     semester: '',
   });
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
@@ -101,11 +102,11 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex w-full max-w-4xl bg-white/80 rounded-2xl shadow-card overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+      <div className="flex w-full max-w-5xl bg-white/80 rounded-2xl shadow-card overflow-hidden">
         <AuthLeftPanel />
-        <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-16 bg-white/60 backdrop-blur-md">
-          <form onSubmit={handleSubmit} className="w-full max-w-sm glassmorphism p-8 rounded-2xl shadow-soft">
+        <div className="flex-1 flex flex-col justify-center items-center p-6 md:p-12 bg-white/60 backdrop-blur-md">
+          <form onSubmit={handleSubmit} className="w-full max-w-md glassmorphism p-6 md:p-8 rounded-2xl shadow-soft">
             <h2 className="text-3xl font-extrabold mb-6 text-center text-primary">Create your account</h2>
             {error && <div className="text-danger mb-4 text-center animate-shake">{error}</div>}
             <div className="mb-3">
@@ -134,15 +135,24 @@ export default function Register() {
             </div>
             <div className="mb-3">
               <label className="block text-gray-700 font-semibold mb-1">Password</label>
-              <input
-                type="password"
-                name="password"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
-                value={form.password}
-                onChange={handleChange}
-                required
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  className="w-full px-4 py-3 pr-20 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white/80"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-primary hover:text-primary/80"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
             <div className="mb-3">
               <label className="block text-gray-700 font-semibold mb-1">Role</label>

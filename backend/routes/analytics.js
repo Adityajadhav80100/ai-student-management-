@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 
 router.get('/admin/overview', auth, requireRole('admin'), analyticsController.getAdminOverview);
+router.get('/admin/defaulter-insights', auth, requireRole('admin'), analyticsController.getAdminDefaulterInsights);
 router.get('/student/me', auth, requireRole('student'), analyticsController.getMyAnalytics);
 router.get(
   '/student/:id',

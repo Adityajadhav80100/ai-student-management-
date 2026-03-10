@@ -5,6 +5,7 @@ import api from '../../services/api';
 
 export default function TeacherDashboard() {
   const [subjects, setSubjects] = useState([]);
+  const [extraClasses, setExtraClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -13,8 +14,12 @@ export default function TeacherDashboard() {
       setLoading(true);
       setError('');
       try {
-        const res = await api.get('/teacher/subjects');
-        setSubjects(res.data);
+        const [subjectRes, extraClassRes] = await Promise.all([
+          api.get('/teacher/subjects'),
+          api.get('/teacher/extra-classes'),
+        ]);
+        setSubjects(subjectRes.data);
+        setExtraClasses(extraClassRes.data.extraClasses || []);
       } catch (err) {
         setError(err.response?.data?.message || 'Unable to load subjects');
       } finally {
@@ -33,19 +38,19 @@ export default function TeacherDashboard() {
         spark: subjects.slice(-4).map(() => ({ value: 3 + Math.random() * 5 })),
       },
       {
-        title: 'Upcoming Classes',
-        value: subjects.length * 2,
-        icon: 'event_available',
-        spark: subjects.slice(-4).map(() => ({ value: 1 + Math.random() * 3 })),
+        title: 'Extra Classes',
+        value: extraClasses.length,
+        icon: 'co_present',
+        spark: extraClasses.slice(-4).map((_, index) => ({ value: index + 1 })),
       },
       {
         title: 'Students Impacted',
-        value: subjects.reduce((sum, subject) => sum + (subject?.enrolledCount || 5), 0),
+        value: extraClasses.reduce((sum, item) => sum + (item.students?.length || 0), 0),
         icon: 'groups',
-        spark: subjects.slice(-4).map(() => ({ value: 8 + Math.random() * 6 })),
+        spark: extraClasses.slice(-4).map((item) => ({ value: item.students?.length || 0 })),
       },
     ],
-    [subjects]
+    [subjects, extraClasses]
   );
 
   return (

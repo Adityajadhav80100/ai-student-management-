@@ -36,9 +36,19 @@ const marksQuery = Joi.object({
   examName: Joi.string().trim().min(2).max(100).optional(),
 });
 
+const extraClassAttendanceRecord = Joi.object({
+  studentId: objectId.required(),
+  attendanceStatus: Joi.string().valid('present', 'absent').required(),
+});
+
+const extraClassAttendanceBody = Joi.object({
+  records: Joi.array().items(extraClassAttendanceRecord).min(1).required(),
+});
+
 module.exports = {
   teacherAttendanceBody,
   teacherMarksBody,
   attendanceQuery,
   marksQuery,
+  extraClassAttendanceBody,
 };

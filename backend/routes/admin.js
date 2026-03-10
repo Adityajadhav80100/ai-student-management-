@@ -21,6 +21,8 @@ const {
   assignHodBody,
   adminStudentQuery,
   assignSubjectsBody,
+  defaulterQuery,
+  extraClassBody,
 } = require('../validators/adminSchemas');
 
 router.use(auth, requireRole('admin'));
@@ -61,6 +63,9 @@ router.patch(
 router.post('/timetables', validate({ body: timetableBody }), adminController.createTimetableEntry);
 router.get('/timetables', validate({ query: timetableQuery }), adminController.listTimetableEntries);
 router.get('/students', validate({ query: adminStudentQuery }), adminController.listStudents);
+router.get('/defaulters', validate({ query: defaulterQuery }), adminController.listDefaulters);
+router.post('/extra-classes', validate({ body: extraClassBody }), adminController.createExtraClass);
+router.get('/extra-classes', adminController.listExtraClasses);
 router.delete('/timetables/:id', adminController.deleteTimetableEntry);
 
 router.put('/departments/:id/hod', validate({ body: assignHodBody }), adminController.assignHod);
